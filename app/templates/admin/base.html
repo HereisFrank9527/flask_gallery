@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}管理后台{% endblock %} - 壁纸分享</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-body">
+    <nav class="admin-navbar">
+        <div class="container">
+            <a href="{{ url_for('admin.dashboard') }}" class="logo">管理后台</a>
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('admin.dashboard') }}">仪表盘</a></li>
+                <li><a href="{{ url_for('admin.manage_images') }}">图片管理</a></li>
+                <li><a href="{{ url_for('admin.upload_image') }}">上传图片</a></li>
+                <li><a href="{{ url_for('admin.manage_tags') }}">标签管理</a></li>
+                <li><a href="{{ url_for('admin.manage_announcement') }}">公告管理</a></li>
+                <li><a href="{{ url_for('admin.manage_site_settings') }}">网站设置</a></li>
+                <li><a href="{{ url_for('admin.manage_hotlink') }}">防盗链设置</a></li>
+                <li><a href="{{ url_for('admin.change_password') }}">修改密码</a></li>
+                <li><a href="{{ url_for('admin.logout') }}">退出登录</a></li>
+                <li><a href="{{ url_for('main.index') }}">返回前台</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="admin-content">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+</html>

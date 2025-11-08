@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>仪表盘</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>总图片数</h3>
+        <p class="stat-number">{{ total_images }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>总标签数</h3>
+        <p class="stat-number">{{ total_tags }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>总点赞数</h3>
+        <p class="stat-number">{{ total_likes }}</p>
+    </div>
+</div>
+
+<div class="recent-section">
+    <h2>最近上传</h2>
+    <div class="recent-images">
+        {% for image in recent_images %}
+        <div class="recent-image-card">
+            <img src="{{ url_for('main.serve_thumbnail', filename=image.thumbnail) }}"
+                 alt="{{ image.title or '壁纸' }}">
+            <div class="recent-info">
+                <h4>{{ image.title or '未命名' }}</h4>
+                <p>{{ image.upload_date.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

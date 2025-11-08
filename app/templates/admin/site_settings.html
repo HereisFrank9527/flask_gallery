@@ -1,0 +1,170 @@
+{% extends "admin/base.html" %}
+
+{% block title %}网站设置{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <h2>网站设置</h2>
+
+    <form method="POST" class="admin-form">
+        <div class="form-group">
+            <label for="site_title">网站标题</label>
+            <input type="text" id="site_title" name="site_title"
+                   value="{{ settings.site_title }}"
+                   class="form-control"
+                   required
+                   maxlength="100"
+                   placeholder="例如：壁纸分享平台">
+            <small class="form-text">将显示在浏览器标签页和页面标题中</small>
+        </div>
+
+        <div class="form-group">
+            <label for="welcome_message">欢迎语</label>
+            <input type="text" id="welcome_message" name="welcome_message"
+                   value="{{ settings.welcome_message }}"
+                   class="form-control"
+                   required
+                   maxlength="200"
+                   placeholder="例如：欢迎来到壁纸分享平台">
+            <small class="form-text">将显示在首页公告上方</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存设置</button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+
+    <div class="settings-info">
+        <h3>当前设置预览</h3>
+        <div class="preview-box">
+            <p><strong>网站标题：</strong>{{ settings.site_title }}</p>
+            <p><strong>欢迎语：</strong>{{ settings.welcome_message }}</p>
+            <p><strong>最后更新：</strong>{{ settings.updated_at.strftime('%Y-%m-%d %H:%M:%S') if settings.updated_at else '未更新' }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-form {
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.settings-info {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.settings-info h3 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.preview-box {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+}
+
+.preview-box p {
+    margin: 0.5rem 0;
+    color: #495057;
+}
+
+.preview-box strong {
+    color: #212529;
+}
+
+@media (max-width: 768px) {
+    .admin-section {
+        padding: 1rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

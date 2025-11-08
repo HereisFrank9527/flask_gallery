@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>壁纸画廊</h1>
+    <p>浏览所有精美壁纸 - 随机展示</p>
+</div>
+
+<div class="image-grid" id="imageGrid">
+    {% for image in images %}
+    <div class="image-card">
+        <a href="{{ url_for('main.image_detail', image_id=image.id) }}">
+            <img src="{{ url_for('main.serve_thumbnail', filename=image.thumbnail) }}"
+                 alt="{{ image.title or '壁纸' }}" loading="lazy">
+        </a>
+        <div class="image-info">
+            {% if image.title %}
+            <h3>{{ image.title }}</h3>
+            {% endif %}
+            <div class="image-meta">
+                <span class="views">浏览: {{ image.views }}</span>
+                <span class="likes">点赞: {{ image.like_count }}</span>
+            </div>
+            <div class="image-tags">
+                {% for tag in image.tags %}
+                <span class="tag">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="loadingIndicator" class="loading-indicator" style="display:none;">
+    <div class="spinner"></div>
+    <p>加载中...</p>
+</div>
+
+<div id="endMessage" class="end-message" style="display:none;">
+    <p>已经到底了，没有更多图片了</p>
+</div>
+
+<script>
+let offset = {{ images|length }};
+let loading = false;
+let hasMore = true;
+
+// 监听滚动事件
+window.addEventListener('scroll', function() {
+    if (loading || !hasMore) return;
+
+    // 检查是��滚动到接近底部
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+
+    if (scrollTop + windowHeight >= documentHeight - 500) {
+        loadMore();
+    }
+});
+
+async function loadMore() {
+    if (loading || !hasMore) return;
+
+    loading = true;
+    document.getElementById('loadingIndicator').style.display = 'block';
+
+    try {
+        const response = await fetch(`/api/gallery/load-more?offset=${offset}&limit=12`);
+        const data = await response.json();
+
+        if (data.images && data.images.length > 0) {
+            const grid = document.getElementById('imageGrid');
+
+            data.images.forEach(image => {
+                const card = createImageCard(image);
+                grid.appendChild(card);
+            });
+
+            offset += data.images.length;
+            hasMore = data.has_more;
+
+            if (!hasMore) {
+                document.getElementById('endMessage').style.display = 'block';
+            }
+        } else {
+            hasMore = false;
+            document.getElementById('endMessage').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('加载失败:', error);
+    } finally {
+        loading = false;
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+}
+
+function createImageCard(image) {
+    const card = document.createElement('div');
+    card.className = 'image-card';
+
+    let titleHtml = '';
+    if (image.title) {
+        titleHtml = `<h3>${escapeHtml(image.title)}</h3>`;
+    }
+
+    let tagsHtml = '';
+    if (image.tags && image.tags.length > 0) {
+        tagsHtml = image.tags.map(tag =>
+            `<span class="tag">${escapeHtml(tag.name)}</span>`
+        ).join('');
+    }
+
+    card.innerHTML = `
+        <a href="${image.detail_url}">
+            <img src="${image.thumbnail}" alt="${escapeHtml(image.title || '壁纸')}" loading="lazy">
+        </a>
+        <div class="image-info">
+            ${titleHtml}
+            <div class="image-meta">
+                <span class="views">浏览: ${image.views}</span>
+                <span class="likes">点赞: ${image.likes}</span>
+            </div>
+            <div class="image-tags">
+                ${tagsHtml}
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+
+<style>
+.loading-indicator {
+    text-align: center;
+    padding: 2rem;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.end-message {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}

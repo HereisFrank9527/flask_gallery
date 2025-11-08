@@ -1,0 +1,142 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-header">
+    <h1>图片管理</h1>
+    <div>
+        <button type="button" class="btn btn-danger" onclick="batchDelete()" id="batchDeleteBtn" style="display:none;">批量删除</button>
+        <a href="{{ url_for('admin.upload_image') }}" class="btn btn-primary">上传新图片</a>
+    </div>
+</div>
+
+<form id="batchForm" method="post" action="{{ url_for('admin.batch_delete_images') }}">
+    <div class="admin-table">
+        <table>
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                    <th>缩略图</th>
+                    <th>标题</th>
+                    <th>标签</th>
+                    <th>浏览</th>
+                    <th>点赞</th>
+                    <th>上传时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for image in images %}
+                <tr>
+                    <td><input type="checkbox" name="image_ids" value="{{ image.id }}" class="image-checkbox" onchange="updateBatchButton()"></td>
+                    <td>
+                        <img src="{{ url_for('main.serve_thumbnail', filename=image.thumbnail) }}"
+                             alt="{{ image.title or '壁纸' }}" class="table-thumbnail">
+                    </td>
+                    <td>{{ image.title or '未命名' }}</td>
+                    <td>
+                        {% for tag in image.tags %}
+                        <span class="tag-small">{{ tag.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>{{ image.views }}</td>
+                    <td>{{ image.like_count }}</td>
+                    <td>{{ image.upload_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="action-buttons">
+                        <a href="{{ url_for('main.image_detail', image_id=image.id) }}"
+                           class="btn btn-small btn-info" target="_blank">查看</a>
+                        <a href="{{ url_for('admin.edit_image', image_id=image.id) }}"
+                           class="btn btn-small btn-warning">编辑</a>
+                        <form method="post" action="{{ url_for('admin.delete_image', image_id=image.id) }}"
+                              style="display:inline;" onsubmit="return confirm('确定要删除这张图片吗？');">
+                            <button type="submit" class="btn btn-small btn-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('admin.manage_images', page=pagination.prev_num) }}" class="page-link">上一页</a>
+    {% endif %}
+
+    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+            {% if page_num == pagination.page %}
+            <span class="page-link active">{{ page_num }}</span>
+            {% else %}
+            <a href="{{ url_for('admin.manage_images', page=page_num) }}" class="page-link">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+        <span class="page-link">...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+    <a href="{{ url_for('admin.manage_images', page=pagination.next_num) }}" class="page-link">下一页</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.image-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateBatchButton();
+}
+
+function updateBatchButton() {
+    const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+    const batchBtn = document.getElementById('batchDeleteBtn');
+    if (checkboxes.length > 0) {
+        batchBtn.style.display = 'inline-block';
+        batchBtn.textContent = `批量删除 (${checkboxes.length})`;
+    } else {
+        batchBtn.style.display = 'none';
+    }
+}
+
+function batchDelete() {
+    const checkboxes = document.querySelectorAll('.image-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('请选择要删除的图片');
+        return;
+    }
+
+    if (confirm(`确定要删除选中的 ${checkboxes.length} 张图片吗？此操作不可恢复！`)) {
+        document.getElementById('batchForm').submit();
+    }
+}
+</script>
+
+<style>
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.admin-header div {
+    display: flex;
+    gap: 1rem;
+}
+
+.image-checkbox {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+#selectAll {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+</style>
+{% endblock %}

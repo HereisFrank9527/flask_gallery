@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>编辑图片</h1>
+
+<div class="form-container">
+    <div class="preview-image">
+        <img src="{{ url_for('main.serve_thumbnail', filename=image.thumbnail) }}"
+             alt="{{ image.title or '壁纸' }}">
+    </div>
+    
+    <form method="post" class="edit-form">
+        <div class="form-group">
+            <label for="title">标题</label>
+            <input type="text" id="title" name="title" value="{{ image.title or '' }}" placeholder="输入图片标题">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">描述</label>
+            <textarea id="description" name="description" rows="4" placeholder="输入图片描述">{{ image.description or '' }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="tags">标签</label>
+            <input type="text" id="tags" name="tags" value="{{ current_tags }}" placeholder="输入标签，用逗号分隔">
+            <small>多个标签请用逗号分隔</small>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a href="{{ url_for('admin.manage_images') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

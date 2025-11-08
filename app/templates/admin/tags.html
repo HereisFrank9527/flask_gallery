@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>标签管理</h1>
+
+<div class="admin-table">
+    <table>
+        <thead>
+            <tr>
+                <th>标签名称</th>
+                <th>图片数量</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tag in tags %}
+            <tr>
+                <td>{{ tag.name }}</td>
+                <td>{{ tag.images.count() }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.delete_tag', tag_id=tag.id) }}" 
+                          style="display:inline;" onsubmit="return confirm('确定要删除这个标签吗？');">
+                        <button type="submit" class="btn btn-small btn-danger">删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

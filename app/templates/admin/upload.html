@@ -1,0 +1,452 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>批量上传图片</h1>
+
+<div class="form-container">
+    <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+        <div class="form-group">
+            <label for="files">选择图片 * (可多选)</label>
+            <input type="file" id="files" name="files" accept="image/*" multiple required>
+            <small>支持格式: PNG, JPG, JPEG, GIF, WEBP | 单个文件最大16MB | 可同时选择多张图片</small>
+            <div id="fileList" class="file-list"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">描述 (应用于所有图片)</label>
+            <textarea id="description" name="description" rows="4" placeholder="输入图片描述"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="tags">标签 (应用于所有图片)</label>
+            <input type="text" id="tags" name="tags" placeholder="输入标签，用逗号分隔，例如：风景,自然,山">
+            <small>多个标签请用逗号分隔</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary" onclick="startUpload()" id="uploadBtn">开始上传</button>
+            <a href="{{ url_for('admin.manage_images') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+
+    <!-- 上传队列和进度 -->
+    <div id="uploadQueue" class="upload-queue" style="display:none;">
+        <h3>上传队列</h3>
+        <div id="queueList"></div>
+        <div class="upload-summary">
+            <div class="summary-item">
+                <span>总计: <strong id="totalCount">0</strong></span>
+            </div>
+            <div class="summary-item">
+                <span>成功: <strong id="successCount" class="text-success">0</strong></span>
+            </div>
+            <div class="summary-item">
+                <span>失败: <strong id="failCount" class="text-danger">0</strong></span>
+            </div>
+            <div class="summary-item">
+                <span>进行中: <strong id="uploadingCount">0</strong></span>
+            </div>
+        </div>
+        <div class="overall-progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="overallProgress"></div>
+            </div>
+            <div class="progress-text" id="overallProgressText">0%</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
+let selectedFiles = [];
+let uploadResults = {
+    total: 0,
+    success: 0,
+    fail: 0,
+    uploading: 0
+};
+
+document.getElementById('files').addEventListener('change', function(e) {
+    const fileList = document.getElementById('fileList');
+    const files = Array.from(e.target.files);
+    selectedFiles = files;
+
+    if (files.length > 0) {
+        let html = '<div class="file-preview-header"><strong>已选择 ' + files.length + ' 张图片：</strong></div>';
+        html += '<div class="file-preview-list">';
+
+        let validCount = 0;
+        let invalidCount = 0;
+
+        files.forEach((file, index) => {
+            const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+            const isValid = file.size <= MAX_FILE_SIZE;
+
+            if (isValid) {
+                validCount++;
+            } else {
+                invalidCount++;
+            }
+
+            html += `<div class="file-preview-item ${isValid ? '' : 'invalid'}">
+                <span class="file-name">${index + 1}. ${file.name}</span>
+                <span class="file-size ${isValid ? '' : 'text-danger'}">${sizeInMB} MB</span>
+                ${!isValid ? '<span class="file-error">文件过大！</span>' : ''}
+            </div>`;
+        });
+
+        html += '</div>';
+
+        if (invalidCount > 0) {
+            html += `<div class="file-warning">⚠️ 有 ${invalidCount} 个文件超过16MB限制，将被跳过</div>`;
+        }
+
+        fileList.innerHTML = html;
+    } else {
+        fileList.innerHTML = '';
+    }
+});
+
+async function startUpload() {
+    const files = selectedFiles.filter(f => f.size <= MAX_FILE_SIZE);
+
+    if (files.length === 0) {
+        alert('没有有效的文件可以上传！');
+        return;
+    }
+
+    const description = document.getElementById('description').value;
+    const tags = document.getElementById('tags').value;
+
+    // 显示上传队列
+    document.getElementById('uploadQueue').style.display = 'block';
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('uploadBtn').textContent = '上传中...';
+
+    // 初始化统计
+    uploadResults = {
+        total: files.length,
+        success: 0,
+        fail: 0,
+        uploading: 0
+    };
+    updateSummary();
+
+    // 创建队列列表
+    const queueList = document.getElementById('queueList');
+    queueList.innerHTML = '';
+
+    // 为每个文件创建队列项
+    files.forEach((file, index) => {
+        const queueItem = createQueueItem(file, index);
+        queueList.appendChild(queueItem);
+    });
+
+    // 逐个上传文件
+    for (let i = 0; i < files.length; i++) {
+        await uploadSingleFile(files[i], i, description, tags);
+    }
+
+    // 上传完成
+    document.getElementById('uploadBtn').textContent = '上传完成';
+
+    if (uploadResults.fail === 0) {
+        setTimeout(() => {
+            window.location.href = "{{ url_for('admin.manage_images') }}";
+        }, 2000);
+    }
+}
+
+function createQueueItem(file, index) {
+    const div = document.createElement('div');
+    div.className = 'queue-item';
+    div.id = `queue-item-${index}`;
+    div.innerHTML = `
+        <div class="queue-item-header">
+            <span class="queue-item-name">${index + 1}. ${file.name}</span>
+            <span class="queue-item-status" id="status-${index}">等待中...</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-${index}"></div>
+        </div>
+        <div class="queue-item-message" id="message-${index}"></div>
+    `;
+    return div;
+}
+
+async function uploadSingleFile(file, index, description, tags) {
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('description', description);
+    formData.append('tags', tags);
+
+    const statusEl = document.getElementById(`status-${index}`);
+    const progressEl = document.getElementById(`progress-${index}`);
+    const messageEl = document.getElementById(`message-${index}`);
+    const queueItem = document.getElementById(`queue-item-${index}`);
+
+    try {
+        uploadResults.uploading++;
+        updateSummary();
+
+        statusEl.textContent = '上传中...';
+        statusEl.className = 'queue-item-status uploading';
+        queueItem.classList.add('uploading');
+
+        const response = await fetch("{{ url_for('admin.upload_image') }}", {
+            method: 'POST',
+            body: formData
+        });
+
+        uploadResults.uploading--;
+
+        if (response.ok) {
+            uploadResults.success++;
+            statusEl.textContent = '✓ 成功';
+            statusEl.className = 'queue-item-status success';
+            queueItem.classList.remove('uploading');
+            queueItem.classList.add('success');
+            progressEl.style.width = '100%';
+            progressEl.classList.add('success');
+        } else {
+            throw new Error('上传失败');
+        }
+    } catch (error) {
+        uploadResults.uploading--;
+        uploadResults.fail++;
+        statusEl.textContent = '✗ 失败';
+        statusEl.className = 'queue-item-status failed';
+        queueItem.classList.remove('uploading');
+        queueItem.classList.add('failed');
+        progressEl.classList.add('failed');
+        messageEl.textContent = error.message;
+        messageEl.className = 'queue-item-message error';
+    }
+
+    updateSummary();
+    updateOverallProgress();
+}
+
+function updateSummary() {
+    document.getElementById('totalCount').textContent = uploadResults.total;
+    document.getElementById('successCount').textContent = uploadResults.success;
+    document.getElementById('failCount').textContent = uploadResults.fail;
+    document.getElementById('uploadingCount').textContent = uploadResults.uploading;
+}
+
+function updateOverallProgress() {
+    const completed = uploadResults.success + uploadResults.fail;
+    const percentage = Math.round((completed / uploadResults.total) * 100);
+    document.getElementById('overallProgress').style.width = percentage + '%';
+    document.getElementById('overallProgressText').textContent = percentage + '%';
+}
+</script>
+
+<style>
+.file-list {
+    margin-top: 1rem;
+}
+
+.file-preview-header {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.file-preview-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.file-preview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    background: white;
+    border-radius: 3px;
+}
+
+.file-preview-item.invalid {
+    background-color: #fff3cd;
+    border-left: 3px solid #ffc107;
+}
+
+.file-name {
+    flex: 1;
+    color: #333;
+}
+
+.file-size {
+    margin-left: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.file-error {
+    margin-left: 0.5rem;
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.file-warning {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+/* 上传队列样式 */
+.upload-queue {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.upload-queue h3 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.upload-summary {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-item strong {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.overall-progress {
+    margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #3498db;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-fill.success {
+    background-color: #28a745;
+}
+
+.progress-fill.failed {
+    background-color: #dc3545;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.queue-item {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.queue-item.uploading {
+    border-color: #3498db;
+    background-color: #e3f2fd;
+}
+
+.queue-item.success {
+    border-color: #28a745;
+    background-color: #d4edda;
+}
+
+.queue-item.failed {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+.queue-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.queue-item-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.queue-item-status {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    background-color: #6c757d;
+    color: white;
+}
+
+.queue-item-status.uploading {
+    background-color: #3498db;
+}
+
+.queue-item-status.success {
+    background-color: #28a745;
+}
+
+.queue-item-status.failed {
+    background-color: #dc3545;
+}
+
+.queue-item-message {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.queue-item-message.error {
+    color: #dc3545;
+}
+
+#queueList {
+    max-height: 500px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

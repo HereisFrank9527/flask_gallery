@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - 壁纸分享</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-box {
+            background: white;
+            padding: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-box h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+        .login-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .login-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .login-form button:hover {
+            background-color: #5568d3;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>管理员登录</h1>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="post" class="login-form">
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required autofocus>
+                </div>
+                <button type="submit">登录</button>
+            </form>
+            
+            <div class="back-link">
+                <a href="{{ url_for('main.index') }}">返回首页</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

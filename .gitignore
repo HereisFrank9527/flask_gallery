@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Flask
+instance/
+.webassets-cache
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+app/static/uploads/*
+app/static/thumbnails/*
+!app/static/uploads/.gitkeep
+!app/static/thumbnails/.gitkeep

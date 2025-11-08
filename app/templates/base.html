@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}{{ title }}{% endblock %} - {{ site_settings.site_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('main.index') }}" class="logo">{{ site_settings.site_title }}</a>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="{{ url_for('main.index') }}" {% if request.endpoint == 'main.index' %}class="active"{% endif %}>首页</a></li>
+                <li><a href="{{ url_for('main.gallery') }}" {% if request.endpoint == 'main.gallery' %}class="active"{% endif %}>画廊</a></li>
+                <li><a href="{{ url_for('main.filter_images') }}" {% if request.endpoint == 'main.filter_images' %}class="active"{% endif %}>筛选</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 壁纸分享平台. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+    function toggleMobileMenu() {
+        const navMenu = document.getElementById('navMenu');
+        navMenu.classList.toggle('active');
+    }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

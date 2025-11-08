@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="image-detail">
+    <div class="image-container">
+        <img src="{{ url_for('main.serve_upload', filename=image.filename) }}"
+             alt="{{ image.title or '壁纸' }}" class="full-image">
+    </div>
+    
+    <div class="detail-info">
+        {% if image.title %}
+        <h1>{{ image.title }}</h1>
+        {% endif %}
+
+        <div class="detail-meta">
+            <div class="meta-item">
+                <span class="label">上传时间：</span>
+                <span>{{ image.upload_date.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">浏览次数：</span>
+                <span>{{ image.views }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">点赞数：</span>
+                <span id="like-count">{{ image.like_count }}</span>
+            </div>
+        </div>
+        
+        <div class="detail-actions">
+            <button id="like-btn" class="btn btn-like {% if has_liked %}liked{% endif %}" 
+                    data-image-id="{{ image.id }}">
+                <span class="like-icon">{% if has_liked %}❤{% else %}♡{% endif %}</span>
+                <span class="like-text">{% if has_liked %}已点赞{% else %}点赞{% endif %}</span>
+            </button>
+        </div>
+        
+        {% if image.description %}
+        <div class="detail-description">
+            <h3>描述</h3>
+            <p>{{ image.description }}</p>
+        </div>
+        {% endif %}
+        
+        {% if image.tags %}
+        <div class="detail-tags">
+            <h3>标签</h3>
+            <div class="tag-list">
+                {% for tag in image.tags %}
+                <a href="{{ url_for('main.filter_images', tags=tag.id) }}" class="tag">{{ tag.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="detail-back">
+            <a href="{{ url_for('main.gallery') }}" class="btn btn-secondary">返回画廊</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('like-btn').addEventListener('click', function() {
+    const imageId = this.dataset.imageId;
+    const btn = this;
+    
+    fetch(`/api/like/${imageId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 更新点赞数
+            document.getElementById('like-count').textContent = data.like_count;
+            
+            // 更新按钮状态
+            if (data.liked) {
+                btn.classList.add('liked');
+                btn.querySelector('.like-icon').textContent = '❤';
+                btn.querySelector('.like-text').textContent = '已点赞';
+            } else {
+                btn.classList.remove('liked');
+                btn.querySelector('.like-icon').textContent = '♡';
+                btn.querySelector('.like-text').textContent = '点赞';
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>筛选壁纸</h1>
+    <p>根据标签筛选你喜欢的壁纸</p>
+</div>
+
+<div class="filter-section">
+    <h3>选择标签：</h3>
+    <form method="get" action="{{ url_for('main.filter_images') }}" class="filter-form" id="filterForm">
+        <div class="tag-filter">
+            {% for tag in all_tags %}
+            <label class="tag-checkbox">
+                <input type="checkbox" name="tags" value="{{ tag.id }}"
+                       {% if tag.id in selected_tags %}checked{% endif %}>
+                <span>{{ tag.name }} ({{ tag.images.count() }})</span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="sort-filter">
+            <label for="sort">排序方式：</label>
+            <select name="sort" id="sort" onchange="document.getElementById('filterForm').submit()">
+                <option value="date" {% if sort_by == 'date' %}selected{% endif %}>按时间降序</option>
+                <option value="views" {% if sort_by == 'views' %}selected{% endif %}>按浏览量降序</option>
+                <option value="likes" {% if sort_by == 'likes' %}selected{% endif %}>按点赞量降序</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">应用筛选</button>
+        <a href="{{ url_for('main.filter_images') }}" class="btn btn-secondary">清除筛选</a>
+    </form>
+</div>
+
+<div class="image-grid">
+    {% for image in images %}
+    <div class="image-card">
+        <a href="{{ url_for('main.image_detail', image_id=image.id) }}">
+            <img src="{{ url_for('main.serve_thumbnail', filename=image.thumbnail) }}"
+                 alt="{{ image.title or '壁纸' }}">
+        </a>
+        <div class="image-info">
+            {% if image.title %}
+            <h3>{{ image.title }}</h3>
+            {% endif %}
+            <div class="image-meta">
+                <span class="views">浏览: {{ image.views }}</span>
+                <span class="likes">点赞: {{ image.like_count }}</span>
+            </div>
+            <div class="image-tags">
+                {% for tag in image.tags %}
+                <span class="tag">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('main.filter_images', page=pagination.prev_num, **request.args) }}" class="page-link">上一页</a>
+    {% endif %}
+    
+    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+            {% if page_num == pagination.page %}
+            <span class="page-link active">{{ page_num }}</span>
+            {% else %}
+            <a href="{{ url_for('main.filter_images', page=page_num, **request.args) }}" class="page-link">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+        <span class="page-link">...</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if pagination.has_next %}
+    <a href="{{ url_for('main.filter_images', page=pagination.next_num, **request.args) }}" class="page-link">下一页</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

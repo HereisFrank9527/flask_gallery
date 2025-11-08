@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h1>管理公告</h1>
+
+<div class="form-container">
+    <form method="post" class="announcement-form">
+        <div class="form-group">
+            <label for="content">公告内容 (支持Markdown格式)</label>
+            <textarea id="content" name="content" rows="20" placeholder="输入公告内容，支持Markdown格式">{{ announcement.content }}</textarea>
+            <small>支持Markdown语法，如标题、列表、链接、代码块等</small>
+        </div>
+
+        <div class="markdown-help">
+            <h4>Markdown语法示例：</h4>
+            <ul>
+                <li><code># 标题1</code> - 一级标题</li>
+                <li><code>## 标题2</code> - 二级标题</li>
+                <li><code>**粗体**</code> - 粗体文字</li>
+                <li><code>*斜体*</code> - 斜体文字</li>
+                <li><code>[链接文字](URL)</code> - 超链接</li>
+                <li><code>- 列表项</code> - 无序列表</li>
+                <li><code>1. 列表项</code> - 有序列表</li>
+                <li><code>`代码`</code> - 行内代码</li>
+            </ul>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存公告</button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.markdown-help {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.markdown-help h4 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.markdown-help ul {
+    list-style: none;
+    padding: 0;
+}
+
+.markdown-help li {
+    margin: 0.3rem 0;
+    color: #555;
+}
+
+.markdown-help code {
+    background-color: #e9ecef;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+</style>
+{% endblock %}

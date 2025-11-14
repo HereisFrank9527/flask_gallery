@@ -75,15 +75,13 @@ def gallery():
     # 初始加载24张图片（两屏的量）
     initial_count = 24
 
-    # 为每个会话生成随机图片ID列表
-    if 'gallery_image_ids' not in session:
-        # 获取所有图片ID并随机打乱
-        all_image_ids = [img.id for img in Image.query.with_entities(Image.id).all()]
-        random.shuffle(all_image_ids)
-        session['gallery_image_ids'] = all_image_ids
+    # 每次访问画廊都重新生成随机图片ID列表
+    all_image_ids = [img.id for img in Image.query.with_entities(Image.id).all()]
+    random.shuffle(all_image_ids)
+    session['gallery_image_ids'] = all_image_ids
 
     # 获取初始图片
-    image_ids = session['gallery_image_ids'][:initial_count]
+    image_ids = all_image_ids[:initial_count]
     images = Image.query.filter(Image.id.in_(image_ids)).all()
 
     # 按照session中的顺序排序

@@ -70,17 +70,25 @@ def index():
 @main_bp.route('/gallery')
 def gallery():
     """画廊页面 - 无限滚动随机显示"""
+    import random
+
     # 初始加载24张图片（两屏的量）
     initial_count = 24
 
-    # 为每个会话生成随机种子
-    if 'gallery_seed' not in session:
-        import random
-        session['gallery_seed'] = random.randint(1, 1000000)
+    # 为每个会话生成随机图片ID列表
+    if 'gallery_image_ids' not in session:
+        # 获取所有图片ID并随机打乱
+        all_image_ids = [img.id for img in Image.query.with_entities(Image.id).all()]
+        random.shuffle(all_image_ids)
+        session['gallery_image_ids'] = all_image_ids
 
-    # 使用随机排序获取初始图片
-    from sqlalchemy import func
-    images = Image.query.order_by(func.random()).limit(initial_count).all()
+    # 获取初始图片
+    image_ids = session['gallery_image_ids'][:initial_count]
+    images = Image.query.filter(Image.id.in_(image_ids)).all()
+
+    # 按照session中的顺序排序
+    images_dict = {img.id: img for img in images}
+    images = [images_dict[img_id] for img_id in image_ids if img_id in images_dict]
 
     return render_template('gallery.html',
                          images=images,
@@ -100,7 +108,7 @@ def filter_images():
 
     # 如果选择了标签，进行筛选
     if tag_ids:
-        query = Image.query.join(Image.tags).filter(Tag.id.in_(tag_ids))
+        query = Image.query.join(Image.tags).filter(Tag.id.in_(tag_ids)).distinct()
     else:
         query = Image.query
 
@@ -115,9 +123,16 @@ def filter_images():
     else:  # date
         query = query.order_by(Image.upload_date.desc())
 
-    pagination = query.paginate(
-        page=page, per_page=per_page, error_out=False
-    )
+    try:
+        pagination = query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+    except Exception as e:
+        # 如果分页出错，返回第一页
+        current_app.logger.error(f'分页错误: {e}')
+        pagination = query.paginate(
+            page=1, per_page=per_page, error_out=False
+        )
 
     return render_template('filter.html',
                          images=pagination.items,
@@ -589,19 +604,25 @@ def gallery_load_more():
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 12, type=int)
     
-    # 获取所有图片ID并随机排序（使用固定种子保证会话内一致性）
-    from flask import session
-    if 'gallery_seed' not in session:
-        import random
-        session['gallery_seed'] = random.randint(1, 1000000)
-    
-    # 使用会话种子进行随机排序
-    from sqlalchemy import func
-    all_images = Image.query.order_by(func.random()).all()
-    
-    # 获取指定范围的图片
-    images = all_images[offset:offset + limit]
-    
+    # 从会话中获取图片ID列表
+    if 'gallery_image_ids' not in session:
+        return jsonify({'images': [], 'has_more': False})
+
+    all_image_ids = session['gallery_image_ids']
+
+    # 获取指定范围的图片ID
+    image_ids = all_image_ids[offset:offset + limit]
+
+    if not image_ids:
+        return jsonify({'images': [], 'has_more': False})
+
+    # 查询图片
+    images = Image.query.filter(Image.id.in_(image_ids)).all()
+
+    # 按照session中的顺序排序
+    images_dict = {img.id: img for img in images}
+    images = [images_dict[img_id] for img_id in image_ids if img_id in images_dict]
+
     # 转换为JSON格式
     result = []
     for image in images:
@@ -614,8 +635,8 @@ def gallery_load_more():
             'tags': [{'name': tag.name} for tag in image.tags],
             'detail_url': url_for('main.image_detail', image_id=image.id)
         })
-    
+
     return jsonify({
         'images': result,
-        'has_more': offset + limit < len(all_images)
+        'has_more': offset + limit < len(all_image_ids)
     })

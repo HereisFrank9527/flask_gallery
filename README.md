@@ -2,7 +2,13 @@
 
 一个基于Flask的个人壁纸分享网站，支持图片上传、标签管理、筛选和访客点赞功能。
 
-[示例网址](www.dgtsr.top)
+[示例网址](https://www.dgtsr.top)
+
+前台预览：
+![](https://img.0xff.ink/pic/blog/flask_gallery/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-11-09%20162257.png)
+
+后台预览“
+![](https://img.0xff.ink/pic/blog/flask_gallery/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-11-09%20162331.png)
 
 ## 功能特性
 

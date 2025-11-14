@@ -4,12 +4,6 @@
 
 [示例网址](https://www.dgtsr.top)
 
-前台预览：
-![](https://img.0xff.ink/pic/blog/flask_gallery/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-11-09%20162257.png)
-
-后台预览“
-![](https://img.0xff.ink/pic/blog/flask_gallery/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-11-09%20162331.png)
-
 ## 功能特性
 
 - **首页**: 展示最新上传的壁纸缩略图
